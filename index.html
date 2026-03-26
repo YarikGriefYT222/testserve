@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Drone Ops: Singularity Pro | Аукцион</title>
-    <!-- Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <title>Drone Ops: Singularity Pro</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --primary: #4ecca3; --secondary: #45b7d1; --bg-dark: #0a0b10;
@@ -23,8 +22,7 @@
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { opacity: 1; } }
 
         .top-panel { background: #111827; padding: 15px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #374151; }
-        .money-display { font-size: 1.4rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-        .coin-icon { width: 28px; height: 28px; background: radial-gradient(circle at 30% 30%, #ffd966, #b8860b); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 1px solid #ffdf8c; }
+        .money-display { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
         .xp-container { height: 8px; background: #374151; border-radius: 4px; margin-top: 10px; overflow: hidden; }
         .xp-fill { height: 100%; background: var(--secondary); width: 0%; transition: 0.4s; }
 
@@ -62,28 +60,41 @@
         .drone-preview, .item-preview { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 10px; }
         .skin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #30363d; border-radius: 10px; margin-bottom: 8px; }
 
-        /* Стили для аукциона */
-        .auction-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #30363d; border-radius: 10px; margin-bottom: 8px; background: #0f1219; }
-        .price-input { background: #1f2937; border: 1px solid var(--primary); padding: 8px; border-radius: 6px; color: white; width: 100px; text-align: center; }
-        .sell-btn { background: var(--gold); color: #000; padding: 6px 12px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; width: auto; margin-left: 8px; border: none; font-weight: bold; }
-
+        /* --- РУЛЕТКА --- */
         .roulette-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:2000; flex-direction:column; justify-content:center; align-items:center; }
         .roulette-window { position:relative; width:310px; height:130px; border:2px solid var(--primary); border-radius:15px; overflow:hidden; background:#0d1117; box-shadow: 0 0 20px rgba(78,204,163,0.3); }
         .roulette-track { display:flex; position:absolute; left:0; top:15px; transition: transform 5s cubic-bezier(0.1, 0, 0.05, 1); will-change: transform; }
         .roulette-item { min-width: 100px; height: 100px; margin: 0 5px; background: #161b22; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-bottom: 3px solid #30363d; }
         .roulette-pointer { position:absolute; left:50%; top:0; transform:translateX(-50%); width:3px; height:100%; background:var(--accent); z-index:10; box-shadow: 0 0 10px var(--accent); }
         .win-screen { display:none; text-align:center; animation: slideUp 0.5s ease; margin-top:20px; }
+
+        /* ЭФФЕКТ ФИНАЛА */
         .ending-screen { position:fixed; top:0; left:0; width:100%; height:100%; background:white; color:black; z-index:3000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; animation: whiteout 5s ease-in forwards; }
         .ending-text { opacity: 0; animation: fadeInText 2s 2s forwards; font-family: serif; }
         @keyframes whiteout { from {opacity:0} to {opacity:1} }
         @keyframes fadeInText { from {opacity:0; transform: translateY(20px);} to {opacity:1; transform: translateY(0);} }
         
-        .player-nick { font-size: 0.7rem; color: var(--primary); background: rgba(78,204,163,0.1); padding: 2px 8px; border-radius: 20px; display: inline-block; }
+        /* СТИЛИ АУКЦИОНА */
+        .auc-card { border-left: 4px solid var(--gold); }
+        .auc-timer { font-size: 0.7rem; background: #21262d; padding: 2px 6px; border-radius: 4px; color: var(--gold); }
     </style>
 </head>
 <body>
 
 <div id="toast-container"></div>
+
+<div id="auction-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="auc-modal-title">ВЫСТАВИТЬ НА ТОРГИ</h3>
+        <p id="auc-drone-info" style="font-size: 0.9rem; opacity: 0.8;"></p>
+        <div style="margin: 20px 0;">
+            <label style="font-size: 0.8rem; color: var(--primary);">Начальная цена (₮):</label>
+            <input type="number" id="auc-input-price" placeholder="1000" style="width:100%; background:#0a0b10; border:1px solid #374151; color:white; padding:12px; border-radius:8px; margin-top:5px; box-sizing:border-box;">
+        </div>
+        <button class="btn" onclick="confirmAuctionPost()">ОПУБЛИКОВАТЬ ЛОТ</button>
+        <button class="btn" style="background:#374151; color:white; margin-top:10px;" onclick="closeAuctionPost()">ОТМЕНА</button>
+    </div>
+</div>
 
 <div id="roulette-page" class="roulette-overlay">
     <h2 id="roulette-title" style="color:var(--primary); margin-bottom:20px; letter-spacing:2px">ОТКРЫТИЕ...</h2>
@@ -131,13 +142,9 @@
 
 <div class="top-panel">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="money-display">
-            <div class="coin-icon">$</div>
-            <span id="money">0</span>
-        </div>
+        <div class="money-display"><span id="money">0</span> ₮</div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div style="text-align: right;">
-                <div id="telegram-nick" class="player-nick">Загрузка...</div>
                 <div style="font-size: 0.7rem;">LVL <span id="lvl-val">1</span></div>
                 <div style="font-size: 0.6rem; opacity: 0.6;"><span id="xp-val">0</span>/500 XP</div>
             </div>
@@ -170,17 +177,21 @@
     </div>
 
     <div id="page-auction" class="page">
-        <div id="final-shop-auction"></div>
-        <h4>🏆 АУКЦИОН - ПОКУПКА</h4>
-        <div id="auction-buy-area"></div>
-        <h4>💰 ВЫСТАВИТЬ НА АУКЦИОН</h4>
-        <div id="auction-sell-area"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center">
+            <h4>МИРОВОЙ АУКЦИОН</h4>
+            <div style="font-size:0.6rem; background:rgba(78,204,163,0.1); padding:4px 8px; border-radius:20px; color:var(--primary)">ONLINE</div>
+        </div>
+        <div id="auction-list" style="margin-top:10px;"></div>
+    </div>
+
+    <div id="page-shop" class="page">
+        <div id="final-shop"></div>
         <h4>СНАБЖЕНИЕ</h4>
-        <div id="shop-cases-auction" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;"></div>
+        <div id="shop-cases" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;"></div>
         <h4>ПОКУПКА ТЕХНИКИ</h4>
-        <div id="shop-drones-auction"></div>
+        <div id="shop-drones"></div>
         <h4 style="margin-top:20px;">МАГАЗИН КРАСКИ</h4>
-        <div id="shop-skins-auction" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+        <div id="shop-skins" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
     </div>
 </div>
 
@@ -193,58 +204,35 @@
         <svg viewBox="0 0 24 24"><path d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5Z"/></svg>
         Ангар
     </div>
-    <div class="nav-item" onclick="showPage('bp')">
-        <svg viewBox="0 0 24 24"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>
-        Пропуск
-    </div>
     <div class="nav-item" onclick="showPage('auction')">
-        <svg viewBox="0 0 24 24"><path d="M11,2 L11,22 L13,22 L13,2 Z M3,8 L3,16 L5,16 L5,8 Z M19,5 L19,19 L21,19 L21,5 Z" fill="currentColor"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8,6 L16,6 M8,18 L16,18" stroke="currentColor" stroke-width="1.5"/></svg>
-        Аукцион
+        <svg viewBox="0 0 24 24"><path d="M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z"/></svg>
+        Торги
+    </div>
+    <div class="nav-item" onclick="showPage('shop')">
+        <svg viewBox="0 0 24 24"><path d="M12,18H6V14H12M21,14V12L20,7H4L3,12V14H4V20H14V14H18V20H20V14M20,4H4V6H20V4Z"/></svg>
+        Рынок
     </div>
 </nav>
 
 <script>
-    // Telegram WebApp инициализация
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-        tg.expand();
-        tg.enableClosingConfirmation();
-    }
-    
-    // Получение данных пользователя из Telegram
-    let telegramUser = null;
-    let telegramNick = "Гость";
-    let telegramId = "guest_" + Math.random().toString(36).substr(2, 8);
-    
-    try {
-        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            telegramUser = tg.initDataUnsafe.user;
-            telegramNick = telegramUser.first_name || "Пользователь";
-            if (telegramUser.last_name) telegramNick += " " + telegramUser.last_name;
-            if (telegramUser.username) telegramNick = "@" + telegramUser.username;
-            telegramId = telegramUser.id.toString();
-        }
-    } catch(e) { console.log("TG init error", e); }
-    
-    document.getElementById('telegram-nick').innerText = telegramNick;
-    
-    // FIREBASE ИНИЦИАЛИЗАЦИЯ
+    // --- FIREBASE INITIALIZATION ---
     const firebaseConfig = {
-        apiKey: "AIzaSyA-tvZ6EUAD_QqmPlpBzXJDyr3ra_VQ-Ws",
-        authDomain: "ruminenewsbot.firebaseapp.com",
-        databaseURL: "https://ruminenewsbot-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "ruminenewsbot",
-        storageBucket: "ruminenewsbot.firebasestorage.app",
-        messagingSenderId: "744143799736",
-        appId: "1:744143799736:web:80bea4b251b83b33c4bb4d",
-        measurementId: "G-D2M3Y929FN"
+      apiKey: "AIzaSyA-tvZ6EUAD_QqmPlpBzXJDyr3ra_VQ-Ws",
+      authDomain: "ruminenewsbot.firebaseapp.com",
+      databaseURL: "https://ruminenewsbot-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "ruminenewsbot",
+      storageBucket: "ruminenewsbot.firebasestorage.app",
+      messagingSenderId: "744143799736",
+      appId: "1:744143799736:web:80bea4b251b83b33c4bb4d",
+      measurementId: "G-D2M3Y929FN"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auctionsRef = db.ref('auctions');
-    const usersRef = db.ref('users');
+    const database = firebase.database();
 
     // --- LEGACY СИСТЕМА ---
+    const getLegacyData = () => JSON.parse(localStorage.getItem('drone_legacy_v1')) || { skins: [] };
+    const saveLegacyData = (data) => localStorage.setItem('drone_legacy_v1', JSON.stringify(data));
+
     const DRONE_SHAPES = {
         d1: "M12,12m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0 M2,2 L6,6 M18,2 L14,6 M2,22 L6,18 M18,22 L14,18 M11,12h2 M12,11v2",
         d2: "M12,2 L14,10 L22,12 L14,14 L12,22 L10,14 L2,12 L10,10 Z M11,12a1,1 0 1,1 2,0a1,1 0 1,1 -2,0",
@@ -291,8 +279,9 @@
         BP_DB.push({ lvl: i, type, reward: val, label });
     }
 
-    let state = JSON.parse(localStorage.getItem('drone_sim_v77_' + telegramId)) || {
-        money: 500, xp: 0, lvl: 1, playerId: telegramId, playerName: telegramNick,
+    let state = JSON.parse(localStorage.getItem('drone_sim_v76')) || {
+        uId: 'user_' + Math.random().toString(36).substr(2, 9),
+        money: 500, xp: 0, lvl: 1,
         drones: [{ ...DRONES_DB[0], battery: 100, status: 'idle' }],
         ownedSkins: ['#4ecca3'],
         claimedBp: [],
@@ -300,11 +289,12 @@
         inventory: { cases: 0, keys: 0, finalChests: 0 },
         gameEnded: false
     };
-    
-    state.playerName = telegramNick;
-    state.playerId = telegramId;
-    
+
+    const legacy = getLegacyData();
+    legacy.skins.forEach(s => { if(!state.ownedSkins.includes(s)) state.ownedSkins.push(s); });
+
     let activeSkinDroneIdx = null;
+    let auctionDroneIdx = null;
 
     function notify(text, type) {
         if (type === 'income' && !state.settings.income) return;
@@ -318,168 +308,463 @@
         setTimeout(() => t.remove(), 2500);
     }
 
-    function toggleSettings() { document.getElementById('settings-modal').style.display = document.getElementById('settings-modal').style.display === 'flex' ? 'none' : 'flex'; }
-    function updateSettings() { state.settings.income = document.getElementById('set-income').checked; state.settings.lvl = document.getElementById('set-lvl').checked; state.settings.system = document.getElementById('set-sys').checked; save(); }
-    function setAllNotifs(val) { state.settings.income = val; state.settings.lvl = val; state.settings.system = val; document.getElementById('set-income').checked = val; document.getElementById('set-lvl').checked = val; document.getElementById('set-sys').checked = val; save(); notify(val ? "Все уведомления включены" : "Все уведомления отключены", 'system'); }
-    function save() { localStorage.setItem('drone_sim_v77_' + telegramId, JSON.stringify(state)); usersRef.child(telegramId).set({ name: telegramNick, money: state.money, lvl: state.lvl }); }
-    function addXP(amt) { state.xp += amt; if (state.xp >= 500) { state.lvl++; state.xp -= 500; notify(`LEVEL UP: ${state.lvl}`, 'lvl'); } save(); render(); }
+    function toggleSettings() {
+        const m = document.getElementById('settings-modal');
+        m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+    }
 
-    function getDroneSVG(id, color) { const path = DRONE_SHAPES[id] || DRONE_SHAPES['d1']; return `<svg width="40" height="40" viewBox="0 0 24 24" style="filter: drop-shadow(0 0 4px ${color})"><path d="${path}" fill="none" stroke="${color}" stroke-width="1.2"/></svg>`; }
+    function updateSettings() {
+        state.settings.income = document.getElementById('set-income').checked;
+        state.settings.lvl = document.getElementById('set-lvl').checked;
+        state.settings.system = document.getElementById('set-sys').checked;
+        save();
+    }
 
-    // АУКЦИОН
-    function putOnAuction(type, itemData, itemName, itemColor, customPrice) {
-        let price = parseInt(customPrice);
-        if (isNaN(price) || price < 10) return notify("Введите корректную цену (мин. 10₮)", 'system');
+    function setAllNotifs(val) {
+        state.settings.income = val; state.settings.lvl = val; state.settings.system = val;
+        document.getElementById('set-income').checked = val;
+        document.getElementById('set-lvl').checked = val;
+        document.getElementById('set-sys').checked = val;
+        save();
+        notify(val ? "Все уведомления включены" : "Все уведомления отключены", 'system');
+    }
+
+    function save() { localStorage.setItem('drone_sim_v76', JSON.stringify(state)); }
+
+    function addXP(amt) {
+        state.xp += amt;
+        if (state.xp >= 500) { state.lvl++; state.xp -= 500; notify(`LEVEL UP: ${state.lvl}`, 'lvl'); }
+        save(); render();
+    }
+
+    function sendOrder(reward, cost, time) {
+        const drone = state.drones.find(d => d.status === 'idle' && d.battery >= cost);
+        if (!drone) return notify("Нет свободных дронов!", 'system');
+        drone.status = 'busy'; drone.battery -= cost;
+        render();
+        setTimeout(() => {
+            drone.status = 'idle'; state.money += reward;
+            addXP(150); notify(`Доход: +${reward}₮`, 'income');
+        }, time / drone.speed);
+    }
+
+    function chargeDrone(idx) {
+        let d = state.drones[idx];
+        if (d.battery >= 100) return;
+        if (state.money >= 50) {
+            state.money -= 50; d.battery = 100;
+            save(); render();
+        } else { notify("Не хватает денег для зарядки!", 'system'); }
+    }
+
+    function sellDrone(idx) {
+        if (state.drones.length <= 1) return notify("Нельзя продать последнего дрона!", 'system');
+        const d = state.drones[idx];
+        if (d.status === 'busy') return notify("Дрон сейчас в полете!", 'system');
+        const refund = Math.floor(d.price * 0.7);
+        state.money += refund;
+        state.drones.splice(idx, 1);
+        notify(`Дрон продан за ${refund}₮`, 'system');
+        save(); render();
+    }
+
+    // --- АУКЦИОН ЛОГИКА ---
+    function openAuctionPost(idx) {
+        auctionDroneIdx = idx;
+        const drone = state.drones[idx];
+        document.getElementById('auc-drone-info').innerText = `${drone.name} (${Math.floor(drone.battery)}% заряда)`;
+        document.getElementById('auction-modal').style.display = 'flex';
+    }
+
+    function closeAuctionPost() {
+        document.getElementById('auction-modal').style.display = 'none';
+        auctionDroneIdx = null;
+    }
+
+    function confirmAuctionPost() {
+        const startPrice = parseInt(document.getElementById('auc-input-price').value);
+        if (isNaN(startPrice) || startPrice < 100) return notify("Мин. цена 100₮");
         
-        const auctionItem = {
-            type: type,
-            sellerId: state.playerId,
-            sellerName: state.playerName,
-            itemData: itemData,
-            itemName: itemName,
-            itemColor: itemColor,
-            price: price,
-            timestamp: Date.now()
+        const drone = state.drones[auctionDroneIdx];
+        const aucId = 'auc_' + Date.now();
+
+        const aucData = {
+            id: aucId,
+            owner: state.uId,
+            drone: drone,
+            price: startPrice,
+            bidder: '',
+            expires: Date.now() + (1000 * 60 * 15), // 15 мин
+            active: true
         };
-        
-        auctionsRef.push(auctionItem).then(() => {
-            notify(`✅ ${itemName} выставлен на аукцион за ${price}₮`, 'system');
-            if (type === 'drone') {
-                const idx = state.drones.findIndex(d => d.id === itemData.id && d.color === itemColor);
-                if (idx !== -1) state.drones.splice(idx, 1);
-            } else if (type === 'skin') {
-                const idx = state.ownedSkins.indexOf(itemColor);
-                if (idx !== -1) state.ownedSkins.splice(idx, 1);
+
+        database.ref('auctions/' + aucId).set(aucData).then(() => {
+            state.drones.splice(auctionDroneIdx, 1);
+            save(); render(); closeAuctionPost();
+            notify("Лот опубликован!");
+        });
+    }
+
+    database.ref('auctions').on('value', (snap) => {
+        const container = document.getElementById('auction-list');
+        const data = snap.val();
+        if (!data) {
+            container.innerHTML = '<p style="text-align:center; opacity:0.3; margin-top:40px;">Активных лотов нет</p>';
+            return;
+        }
+
+        container.innerHTML = Object.values(data).map(auc => {
+            const isMine = auc.owner === state.uId;
+            const isWinner = auc.bidder === state.uId;
+            const timeLeft = Math.max(0, Math.floor((auc.expires - Date.now())/1000));
+            
+            // Если время вышло, лот не активен визуально
+            const statusLabel = timeLeft > 0 ? timeLeft + 'с' : 'ЗАВЕРШЕНО';
+
+            return `
+                <div class="card auc-card">
+                    <div style="display:flex; justify-content:space-between">
+                        <div style="display:flex; gap:10px; align-items:center">
+                            ${getDroneSVG(auc.drone.id, auc.drone.color)}
+                            <b>${auc.drone.name}</b>
+                        </div>
+                        <span class="auc-timer">${statusLabel}</span>
+                    </div>
+                    <div style="margin:10px 0; font-size:0.8rem">Цена: <span style="color:var(--primary)">${auc.price}₮</span></div>
+                    ${auc.active && timeLeft > 0 ? 
+                        `<button class="btn" onclick="placeBid('${auc.id}', ${auc.price})" ${isMine ? 'disabled' : ''}>${isMine ? 'ВАШ ЛОТ' : 'СТАВКА (+200₮)'}</button>` :
+                        `<button class="btn" style="background:var(--gold)" onclick="collectLot('${auc.id}')" ${!isMine && !isWinner ? 'disabled' : ''}>${isWinner ? 'ЗАБРАТЬ ДРОН' : (isMine ? 'ПОЛУЧИТЬ ₮' : 'ЛОТ ПРОДАН')}</button>`
+                    }
+                </div>
+            `;
+        }).join('');
+    });
+
+    function placeBid(id, current) {
+        const nextPrice = current + 200;
+        if (state.money < nextPrice) return notify("Не хватает денег!");
+
+        database.ref('auctions/' + id).transaction(auc => {
+            if (auc && auc.active) {
+                auc.price = nextPrice;
+                auc.bidder = state.uId;
             }
+            return auc;
+        }, (err, committed) => {
+            if (committed) {
+                state.money -= nextPrice;
+                save(); render(); notify("Ставка принята!");
+            }
+        });
+    }
+
+    function collectLot(id) {
+        database.ref('auctions/' + id).once('value', s => {
+            const auc = s.val();
+            if (auc.bidder === state.uId) {
+                state.drones.push(auc.drone);
+                notify("Дрон добавлен в ангар!");
+            } else if (auc.owner === state.uId) {
+                state.money += auc.price;
+                notify(`Продано за ${auc.price}₮!`);
+            }
+            database.ref('auctions/' + id).remove();
             save(); render();
         });
     }
 
-    function buyFromAuction(auctionId, sellerId, price, itemType, itemData, itemName, itemColor) {
-        if (state.money < price) return notify(`Не хватает ${price}₮ для покупки!`, 'system');
-        if (sellerId === state.playerId) return notify("Нельзя купить свой же лот!", 'system');
-        
-        state.money -= price;
-        
-        if (itemType === 'drone') {
-            state.drones.push({ ...itemData, battery: 100, status: 'idle', color: itemColor });
-            notify(`🎉 Куплен дрон ${itemName} за ${price}₮!`, 'system');
-        } else if (itemType === 'skin') {
-            if (!state.ownedSkins.includes(itemColor)) state.ownedSkins.push(itemColor);
-            notify(`🎨 Куплен скин ${itemName} за ${price}₮!`, 'system');
+    function openSkinMenu(idx) {
+        activeSkinDroneIdx = idx;
+        const drone = state.drones[idx];
+        document.getElementById('skin-modal-title').innerText = `СКИНЫ: ${drone.name}`;
+        const list = document.getElementById('skin-list');
+        list.innerHTML = SKINS_DB.map(s => {
+            const isOwned = state.ownedSkins.includes(s.color);
+            const isEquipped = drone.color === s.color;
+            return `
+                <div class="skin-item">
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <div style="width:25px; height:25px; background:${s.color}; border-radius:5px; border:1px solid #fff"></div>
+                        <span>${s.name}</span>
+                    </div>
+                    ${isOwned ? 
+                        `<button class="btn" style="width:100px; font-size:0.7rem; background:${isEquipped?'#374151':''}" onclick="equipSkin('${s.color}')" ${isEquipped?'disabled':''}>${isEquipped?'АКТИВЕН':'ВЫБРАТЬ'}</button>` : 
+                        `<span style="font-size:0.7rem; opacity:0.5">НЕ КУПЛЕНО</span>`
+                    }
+                </div>
+            `;
+        }).join('');
+        document.getElementById('skin-modal').style.display = 'flex';
+    }
+
+    function closeSkinMenu() {
+        document.getElementById('skin-modal').style.display = 'none';
+        activeSkinDroneIdx = null;
+    }
+
+    function equipSkin(color) {
+        if (activeSkinDroneIdx !== null) {
+            state.drones[activeSkinDroneIdx].color = color;
+            save(); render(); closeSkinMenu();
+            notify("Скин применен!", 'system');
         }
-        
-        auctionsRef.child(auctionId).remove();
+    }
+
+    function buyItem(type, price) {
+        if (state.money < price) return notify("Не хватает денег!", 'system');
+        state.money -= price;
+        if (type === 'case') state.inventory.cases++;
+        if (type === 'key') state.inventory.keys++;
+        notify("Покупка прошла успешно", 'system');
         save(); render();
     }
 
-    function renderAuction() {
-        auctionsRef.once('value', (snapshot) => {
-            const auctions = [];
-            snapshot.forEach(child => { auctions.push({ id: child.key, ...child.val() }); });
-            auctions.sort((a,b) => b.timestamp - a.timestamp);
-            
-            const buyArea = document.getElementById('auction-buy-area');
-            buyArea.innerHTML = auctions.length === 0 ? '<div class="card">📭 На аукционе пока нет лотов</div>' : 
-                auctions.map(item => `
-                    <div class="auction-item">
-                        <div style="display:flex; align-items:center; gap:10px; flex:1">
-                            ${item.type === 'drone' ? getDroneSVG(item.itemData.id, item.itemColor) : `<div style="width:35px; height:35px; background:${item.itemColor}; border-radius:8px; border:1px solid #fff"></div>`}
-                            <div><b>${item.itemName}</b><br><small class="loc-tag">${item.type === 'drone' ? 'Дрон' : 'Скин'} | Продавец: ${item.sellerName || item.sellerId.slice(0,8)}</small></div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px">
-                            <span style="color:var(--gold); font-weight:bold">${item.price}₮</span>
-                            <button class="btn" style="width:80px; padding:6px; background:var(--secondary)" onclick="buyFromAuction('${item.id}','${item.sellerId}',${item.price},'${item.type}',${JSON.stringify(item.itemData).replace(/"/g, '&quot;')},'${item.itemName}','${item.itemColor}')">КУПИТЬ</button>
-                        </div>
-                    </div>
-                `).join('');
-        });
+    function getRollItem() {
+        const skinRoll = Math.random() * 100;
+        if (skinRoll < 20) {
+            const skin = SKINS_DB[Math.floor(Math.random() * (SKINS_DB.length - 1))];
+            return { type: 'skin', data: skin, color: skin.color, name: skin.name };
+        } else {
+            const roll = Math.random() * 100;
+            let drone;
+            if (roll > 95) drone = DRONES_DB[Math.floor(Math.random() * 3) + 7];
+            else if (roll > 75) drone = DRONES_DB[Math.floor(Math.random() * 4) + 3];
+            else drone = DRONES_DB[Math.floor(Math.random() * 3)];
+            return { type: 'drone', data: drone, color: drone.color, name: drone.name };
+        }
     }
 
-    function renderSellSection() {
-        const sellArea = document.getElementById('auction-sell-area');
-        const ownedDronesForSell = state.drones.filter(d => d.price > 0 && d.status !== 'busy' && d.id !== 'd1');
-        const ownedSkinsForSell = SKINS_DB.filter(s => s.price > 0 && state.ownedSkins.includes(s.color) && s.color !== '#4ecca3');
+    function openCase() {
+        if (state.inventory.cases <= 0) return notify("У вас нет кейсов!", 'system');
+        if (state.inventory.keys <= 0) return notify("Нет ключей!", 'system');
         
-        sellArea.innerHTML = `
-            <div class="card"><h4 style="margin:0 0 8px 0">🚁 Выставить ДРОНА</h4>
-                ${ownedDronesForSell.map(d => `
-                    <div class="auction-item" style="margin-bottom:8px">
-                        <div style="display:flex; align-items:center; gap:10px; flex:1">${getDroneSVG(d.id, d.color)}<span><b>${d.name}</b><br><small>Базовая цена: ${d.price}₮</small></span></div>
-                        <div style="display:flex; gap:5px"><input type="number" id="price_drone_${d.id}_${d.color.replace('#','')}" placeholder="Цена" class="price-input" value="${Math.floor(d.price * 1.2)}"><button class="sell-btn" onclick="putOnAuction('drone', ${JSON.stringify(d).replace(/"/g, '&quot;')}, '${d.name}', '${d.color}', document.getElementById('price_drone_${d.id}_${d.color.replace('#','')}').value)">ВЫСТАВИТЬ</button></div>
-                    </div>
-                `).join('') || '<div style="color:#666">Нет дронов для продажи</div>'}
-            </div>
-            <div class="card"><h4 style="margin:0 0 8px 0">🎨 Выставить СКИН</h4>
-                ${ownedSkinsForSell.map(s => `
-                    <div class="auction-item" style="margin-bottom:8px">
-                        <div style="display:flex; align-items:center; gap:10px; flex:1"><div style="width:30px; height:30px; background:${s.color}; border-radius:6px"></div><span><b>${s.name}</b><br><small>Базовая цена: ${s.price}₮</small></span></div>
-                        <div style="display:flex; gap:5px"><input type="number" id="price_skin_${s.id}" placeholder="Цена" class="price-input" value="${Math.floor(s.price * 1.3)}"><button class="sell-btn" onclick="putOnAuction('skin', ${JSON.stringify(s).replace(/"/g, '&quot;')}, '${s.name}', '${s.color}', document.getElementById('price_skin_${s.id}').value)">ВЫСТАВИТЬ</button></div>
-                    </div>
-                `).join('') || '<div style="color:#666">Нет скинов для продажи</div>'}
-            </div>`;
+        state.inventory.cases--;
+        state.inventory.keys--;
+        save(); render();
+
+        const track = document.getElementById('roulette-track');
+        const page = document.getElementById('roulette-page');
+        const winScreen = document.getElementById('win-screen');
+        
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(0)';
+        winScreen.style.display = 'none';
+        document.getElementById('roulette-title').innerText = "ОТКРЫТИЕ...";
+        page.style.display = 'flex';
+
+        const itemCount = 45;
+        const itemWidth = 110;
+        track.innerHTML = '';
+        
+        let rollItems = [];
+        for(let i=0; i<itemCount; i++) {
+            const item = getRollItem();
+            rollItems.push(item);
+            const el = document.createElement('div');
+            el.className = 'roulette-item';
+            el.style.borderBottomColor = item.color;
+            const icon = item.type === 'drone' ? getDroneSVG(item.data.id, item.color) : `<div style="width:30px; height:30px; background:${item.color}; border-radius:5px; border:1px solid #fff"></div>`;
+            el.innerHTML = `${icon}<div style="font-size:0.5rem; margin-top:5px; color:#aaa">${item.name}</div>`;
+            track.appendChild(el);
+        }
+
+        const winnerIndex = itemCount - 5;
+        const winner = rollItems[winnerIndex];
+
+        setTimeout(() => {
+            const targetPos = (winnerIndex * itemWidth) + (itemWidth/2) - 155;
+            track.style.transition = 'transform 5s cubic-bezier(0.1, 0, 0.05, 1)';
+            track.style.transform = `translateX(-${targetPos}px)`;
+        }, 50);
+
+        setTimeout(() => {
+            document.getElementById('roulette-title').innerText = "ВЫПАЛО:";
+            winScreen.style.display = 'block';
+            document.getElementById('win-name').innerText = winner.name;
+            document.getElementById('win-icon').innerHTML = winner.type === 'drone' ? getDroneSVG(winner.data.id, winner.color) : `<div style="width:60px; height:60px; background:${winner.color}; border-radius:10px; border:2px solid #fff; margin:0 auto"></div>`;
+            
+            if (winner.type === 'skin') {
+                if (!state.ownedSkins.includes(winner.color)) state.ownedSkins.push(winner.color);
+                else { state.money += 1500; notify(`Повтор: +1500₮`, 'income'); }
+            } else {
+                state.drones.push({ ...winner.data, battery: 100, status: 'idle' });
+            }
+            save(); render();
+        }, 5500);
     }
 
-    // Остальные функции
-    function sendOrder(reward, cost, time) { const drone = state.drones.find(d => d.status === 'idle' && d.battery >= cost); if (!drone) return notify("Нет свободных дронов!", 'system'); drone.status = 'busy'; drone.battery -= cost; render(); setTimeout(() => { drone.status = 'idle'; state.money += reward; addXP(150); notify(`Доход: +${reward}₮`, 'income'); }, time / drone.speed); }
-    function chargeDrone(idx) { let d = state.drones[idx]; if (d.battery >= 100) return; if (state.money >= 50) { state.money -= 50; d.battery = 100; save(); render(); } else notify("Не хватает денег для зарядки!", 'system'); }
-    function sellDrone(idx) { if (state.drones.length <= 1) return notify("Нельзя продать последнего дрона!", 'system'); const d = state.drones[idx]; if (d.status === 'busy') return notify("Дрон сейчас в полете!", 'system'); const refund = Math.floor(d.price * 0.7); state.money += refund; state.drones.splice(idx, 1); notify(`Дрон продан за ${refund}₮`, 'system'); save(); render(); }
-    function openSkinMenu(idx) { activeSkinDroneIdx = idx; const drone = state.drones[idx]; document.getElementById('skin-modal-title').innerText = `СКИНЫ: ${drone.name}`; document.getElementById('skin-list').innerHTML = SKINS_DB.map(s => { const isOwned = state.ownedSkins.includes(s.color); const isEquipped = drone.color === s.color; return `<div class="skin-item"><div style="display:flex; align-items:center; gap:10px"><div style="width:25px; height:25px; background:${s.color}; border-radius:5px"></div><span>${s.name}</span></div>${isOwned ? `<button class="btn" style="width:100px" onclick="equipSkin('${s.color}')" ${isEquipped?'disabled':''}>${isEquipped?'АКТИВЕН':'ВЫБРАТЬ'}</button>` : `<span>НЕ КУПЛЕНО</span>`}</div>`; }).join(''); document.getElementById('skin-modal').style.display = 'flex'; }
-    function closeSkinMenu() { document.getElementById('skin-modal').style.display = 'none'; activeSkinDroneIdx = null; }
-    function equipSkin(color) { if (activeSkinDroneIdx !== null) { state.drones[activeSkinDroneIdx].color = color; save(); render(); closeSkinMenu(); notify("Скин применен!", 'system'); } }
-    function buyItem(type, price) { if (state.money < price) return notify("Не хватает денег!", 'system'); state.money -= price; if (type === 'case') state.inventory.cases++; if (type === 'key') state.inventory.keys++; notify("Покупка прошла успешно", 'system'); save(); render(); }
-    function getRollItem() { const skinRoll = Math.random() * 100; if (skinRoll < 20) { const skin = SKINS_DB[Math.floor(Math.random() * (SKINS_DB.length - 1))]; return { type: 'skin', data: skin, color: skin.color, name: skin.name }; } else { const roll = Math.random() * 100; let drone; if (roll > 95) drone = DRONES_DB[Math.floor(Math.random() * 3) + 7]; else if (roll > 75) drone = DRONES_DB[Math.floor(Math.random() * 4) + 3]; else drone = DRONES_DB[Math.floor(Math.random() * 3)]; return { type: 'drone', data: drone, color: drone.color, name: drone.name }; } }
-    function openCase() { if (state.inventory.cases <= 0) return notify("У вас нет кейсов!", 'system'); if (state.inventory.keys <= 0) return notify("Нет ключей!", 'system'); state.inventory.cases--; state.inventory.keys--; save(); render(); const track = document.getElementById('roulette-track'); const page = document.getElementById('roulette-page'); const winScreen = document.getElementById('win-screen'); track.style.transition = 'none'; track.style.transform = 'translateX(0)'; winScreen.style.display = 'none'; document.getElementById('roulette-title').innerText = "ОТКРЫТИЕ..."; page.style.display = 'flex'; const itemCount = 45; const itemWidth = 110; track.innerHTML = ''; let rollItems = []; for(let i=0; i<itemCount; i++) { const item = getRollItem(); rollItems.push(item); const el = document.createElement('div'); el.className = 'roulette-item'; el.style.borderBottomColor = item.color; const icon = item.type === 'drone' ? getDroneSVG(item.data.id, item.color) : `<div style="width:30px; height:30px; background:${item.color}; border-radius:5px"></div>`; el.innerHTML = `${icon}<div style="font-size:0.5rem; margin-top:5px;">${item.name}</div>`; track.appendChild(el); } const winnerIndex = itemCount - 5; const winner = rollItems[winnerIndex]; setTimeout(() => { const center = 155; const targetPos = (winnerIndex * itemWidth) + (itemWidth/2) - center; track.style.transition = 'transform 5s cubic-bezier(0.1, 0, 0.05, 1)'; track.style.transform = `translateX(-${targetPos}px)`; }, 50); setTimeout(() => { document.getElementById('roulette-title').innerText = "ВЫПАЛО:"; winScreen.style.display = 'block'; document.getElementById('win-name').innerText = winner.name; document.getElementById('win-icon').innerHTML = winner.type === 'drone' ? getDroneSVG(winner.data.id, winner.color) : `<div style="width:60px; height:60px; background:${winner.color}; border-radius:10px; margin:0 auto"></div>`; if (winner.type === 'skin') { if (!state.ownedSkins.includes(winner.color)) { state.ownedSkins.push(winner.color); notify(`НОВЫЙ СКИН: ${winner.name}`, 'system'); } else { state.money += 1500; notify(`Повтор: +1500₮`, 'income'); } } else { state.drones.push({ ...winner.data, battery: 100, status: 'idle' }); notify(`НОВЫЙ ДРОН: ${winner.name}`, 'system'); } save(); render(); }, 5500); }
-    function closeRoulette() { document.getElementById('roulette-page').style.display = 'none'; showPage('hangar'); switchHangar('drones'); }
-    function openFinalChest() { if (state.inventory.finalChests <= 0) return notify("Нет финальных сундуков!", 'system'); state.inventory.finalChests--; const finalColor = '#ff00ff'; if (!state.ownedSkins.includes(finalColor)) { state.ownedSkins.push(finalColor); notify("ПОЛУЧЕН LEGACY СКИН: SINGULARITY!", 'system'); } else { state.money += 500000; notify("Повтор: +500.000₮", 'income'); } save(); render(); showPage('hangar'); }
-    function switchHangar(type) { document.getElementById('tab-drones').classList.toggle('active', type === 'drones'); document.getElementById('tab-cases').classList.toggle('active', type === 'cases'); document.getElementById('drones-area').style.display = type === 'drones' ? 'block' : 'none'; document.getElementById('cases-area').style.display = type === 'cases' ? 'block' : 'none'; }
-    function getCaseSVG(final = false) { const color = final ? "#ffd700" : "#45b7d1"; return `<svg viewBox="0 0 24 24" width="40" height="40"><path d="M4,6 L20,6 L20,18 L4,18 Z" fill="#2c3e50" stroke="${color}" stroke-width="1.5"/><path d="M4,6 L12,12 L20,6" fill="none" stroke="${color}" stroke-width="1.5"/><rect x="10" y="10" width="4" height="4" rx="1" fill="${color}"/></svg>`; }
-    function getKeySVG() { return `<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="7" cy="12" r="4" fill="none" stroke="#45b7d1" stroke-width="2"/><path d="M11,12 L20,12 M17,12 L17,15 M20,12 L20,15" stroke="#45b7d1" stroke-width="2" stroke-linecap="round"/></svg>`; }
-    function buyDrone(id) { const d = DRONES_DB.find(x => x.id === id); if (state.money < d.price) return notify("Не хватает денег!", 'system'); state.money -= d.price; state.drones.push({ ...d, battery: 100, status: 'idle' }); notify(`Дрон ${d.name} куплен!`, 'system'); save(); render(); }
-    function buySkin(id) { const s = SKINS_DB.find(x => x.id === id); if (state.ownedSkins.includes(s.color)) return notify("У вас уже куплено!", 'system'); if (state.money < s.price) return notify("Не хватает денег!", 'system'); state.money -= s.price; state.ownedSkins.push(s.color); notify(`Скин ${s.name} разблокирован!`, 'system'); save(); render(); }
-    function claimBp(idx) { const item = BP_DB[idx]; if (state.lvl < item.lvl) return notify("Не хватает XP!", 'system'); if (state.claimedBp.includes(idx)) return notify("Уже получено!", 'system'); if (item.type === 'money') state.money += item.reward; if (item.type === 'drone') state.drones.push({ ...item.reward, battery: 100, status: 'idle' }); if (item.type === 'skin') { if(!state.ownedSkins.includes(item.reward.color)) state.ownedSkins.push(item.reward.color); } if (item.type === 'charge') state.drones.forEach(d => d.battery = 100); if (item.type === 'final_chest') state.inventory.finalChests++; state.claimedBp.push(idx); notify(`Награда LVL ${item.lvl} получена!`, 'system'); save(); render(); }
-    function triggerSingularity() { const cost = 1000000; if (state.money < cost) return notify("Требуется 1.000.000₮ для Сингулярности!", 'system'); state.money -= cost; state.gameEnded = true; save(); const end = document.createElement('div'); end.className = 'ending-screen'; end.innerHTML = `<div class="ending-text"><h1>СИНГУЛЯРНОСТЬ</h1><p>Вечные данные сохранены</p></div>`; document.body.appendChild(end); setTimeout(() => { localStorage.removeItem('drone_sim_v77_' + telegramId); location.reload(); }, 6000); }
-    
+    function closeRoulette() {
+        document.getElementById('roulette-page').style.display = 'none';
+        showPage('hangar'); switchHangar('drones');
+    }
+
+    function openFinalChest() {
+        if (state.inventory.finalChests <= 0) return notify("Нет финальных сундуков!", 'system');
+        state.inventory.finalChests--;
+        const finalColor = '#ff00ff';
+        if (!state.ownedSkins.includes(finalColor)) {
+            state.ownedSkins.push(finalColor);
+            const legacyData = getLegacyData();
+            legacyData.skins.push(finalColor);
+            saveLegacyData(legacyData);
+            notify("ПОЛУЧЕН LEGACY СКИН: SINGULARITY!", 'system');
+        } else {
+            state.money += 500000;
+            notify("Повтор: +500.000₮", 'income');
+        }
+        save(); render(); showPage('hangar');
+    }
+
+    function switchHangar(type) {
+        document.getElementById('tab-drones').classList.toggle('active', type === 'drones');
+        document.getElementById('tab-cases').classList.toggle('active', type === 'cases');
+        document.getElementById('drones-area').style.display = type === 'drones' ? 'block' : 'none';
+        document.getElementById('cases-area').style.display = type === 'cases' ? 'block' : 'none';
+    }
+
+    function getCaseSVG(final = false) {
+        const color = final ? "#ffd700" : "#45b7d1";
+        return `<svg viewBox="0 0 24 24" width="40" height="40"><path d="M4,6 L20,6 L20,18 L4,18 Z" fill="#2c3e50" stroke="${color}" stroke-width="1.5"/><path d="M4,6 L12,12 L20,6" fill="none" stroke="${color}" stroke-width="1.5"/><rect x="10" y="10" width="4" height="4" rx="1" fill="${color}"/></svg>`;
+    }
+
+    function getKeySVG() {
+        return `<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="7" cy="12" r="4" fill="none" stroke="#45b7d1" stroke-width="2"/><path d="M11,12 L20,12 M17,12 L17,15 M20,12 L20,15" stroke="#45b7d1" stroke-width="2" stroke-linecap="round"/></svg>`;
+    }
+
+    function getDroneSVG(id, color) {
+        const path = DRONE_SHAPES[id] || DRONE_SHAPES['d1'];
+        return `<svg width="40" height="40" viewBox="0 0 24 24" style="filter: drop-shadow(0 0 4px ${color})"><path d="${path}" fill="none" stroke="${color}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
+    }
+
+    function buyDrone(id) {
+        const d = DRONES_DB.find(x => x.id === id);
+        if (state.money < d.price) return notify("Не хватает денег!", 'system');
+        state.money -= d.price;
+        state.drones.push({ ...d, battery: 100, status: 'idle' });
+        notify(`Дрон ${d.name} куплен!`, 'system');
+        save(); render();
+    }
+
+    function buySkin(id) {
+        const s = SKINS_DB.find(x => x.id === id);
+        if (state.ownedSkins.includes(s.color)) return notify("У вас уже куплено!", 'system');
+        if (state.money < s.price) return notify("Не хватает денег!", 'system');
+        state.money -= s.price;
+        state.ownedSkins.push(s.color);
+        notify(`Скин ${s.name} разблокирован!`, 'system');
+        save(); render();
+    }
+
+    function claimBp(idx) {
+        const item = BP_DB[idx];
+        if (state.lvl < item.lvl) return notify("Не хватает XP!", 'system');
+        if (state.claimedBp.includes(idx)) return notify("Уже получено!", 'system');
+        if (item.type === 'money') state.money += item.reward;
+        if (item.type === 'drone') state.drones.push({ ...item.reward, battery: 100, status: 'idle' });
+        if (item.type === 'skin') { if(!state.ownedSkins.includes(item.reward.color)) state.ownedSkins.push(item.reward.color); }
+        if (item.type === 'charge') state.drones.forEach(d => d.battery = 100);
+        if (item.type === 'final_chest') state.inventory.finalChests++;
+        state.claimedBp.push(idx); 
+        notify(`Награда LVL ${item.lvl} получена!`, 'system');
+        save(); render();
+    }
+
+    function triggerSingularity() {
+        const cost = 1000000;
+        if (state.money < cost) return notify("Требуется 1.000.000₮ для Сингулярности!", 'system');
+        state.money -= cost;
+        state.gameEnded = true;
+        save();
+        const end = document.createElement('div');
+        end.className = 'ending-screen';
+        end.innerHTML = `<div class="ending-text"><h1 style="letter-spacing:12px; margin-bottom:10px;">СИНГУЛЯРНОСТЬ</h1><p style="font-style:italic; color:#666;">Вечные данные сохранены</p><div style="margin-top:40px; font-size:1.1rem; line-height:1.6">Ваше сознание загружено в сеть.<br>Legacy-скины будут доступны в новой итерации.</div></div>`;
+        document.body.appendChild(end);
+        setTimeout(() => { localStorage.removeItem('drone_sim_v76'); location.reload(); }, 6000);
+    }
+
     function showPage(p) {
         document.querySelectorAll('.page').forEach(x => x.classList.remove('active-page'));
         document.getElementById('page-'+p).classList.add('active-page');
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-        const navItems = document.querySelectorAll('.nav-item');
-        if (p === 'main') navItems[0].classList.add('active');
-        if (p === 'hangar') navItems[1].classList.add('active');
-        if (p === 'bp') navItems[2].classList.add('active');
-        if (p === 'auction') navItems[3].classList.add('active');
-        if (p === 'auction') { renderAuction(); renderSellSection(); }
+        const navMap = { 'main':0, 'hangar':1, 'auction':2, 'shop':3 };
+        const idx = navMap[p];
+        if (idx !== undefined) document.querySelectorAll('.nav-item')[idx].classList.add('active');
     }
-    
+
     function render() {
         document.getElementById('money').innerText = Math.floor(state.money).toLocaleString();
         document.getElementById('lvl-val').innerText = state.lvl;
         document.getElementById('xp-val').innerText = state.xp;
         document.getElementById('xp-fill').style.width = (state.xp / 500 * 100) + '%';
-        
+
         const activeLocs = state.drones.map(d => d.loc);
-        document.getElementById('orders-area').innerHTML = DRONES_DB.filter(d => activeLocs.includes(d.loc)).map((d, i) => { let reward = (i + 1) * 120; let cost = 10 + (i * 3); return `<div class="card"><div class="loc-tag">${d.loc}</div><div style="display:flex; justify-content:space-between;"><b>Заказ #${i+1}</b> <span>${reward}₮</span></div><button class="btn" onclick="sendOrder(${reward},${cost},${3000+(i*500)})">ЗАПУСТИТЬ (-${cost}%)</button></div>`; }).join('');
-        
-        document.getElementById('drones-area').innerHTML = state.drones.map((d, i) => `<div class="card"><div style="display:flex; gap:15px; align-items:center"><div class="drone-preview">${getDroneSVG(d.id, d.color)}</div><div style="flex-grow:1"><div><b>${d.name}</b> <span>${Math.floor(d.battery)}%</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px"><button class="btn btn-charge" onclick="chargeDrone(${i})" ${d.battery >= 100 ? 'disabled' : ''}>ЗАРЯДИТЬ</button><button class="btn btn-charge" onclick="openSkinMenu(${i})">СКИНЫ</button></div><button class="btn btn-outline" onclick="sellDrone(${i})">ПРОДАТЬ ЗА ${Math.floor(d.price * 0.7)}₮</button></div></div></div>`).join('');
-        
-        document.getElementById('cases-area').innerHTML = `<div class="card"><div style="display:flex; align-items:center; gap:15px"><div>${getCaseSVG()}</div><div><b>Базовый кейс</b><br>В наличии: ${state.inventory.cases}</div></div><button class="btn" onclick="openCase()" ${state.inventory.keys <= 0 || state.inventory.cases <= 0 ? 'disabled' : ''}>ОТКРЫТЬ (Ключи: ${state.inventory.keys})</button></div><div class="card"><div style="display:flex; align-items:center; gap:15px"><div>${getCaseSVG(true)}</div><div><b>Final Chest</b><br>Доступно: ${state.inventory.finalChests}</div></div><button class="btn" style="background:var(--gold)" onclick="openFinalChest()" ${state.inventory.finalChests <= 0 ? 'disabled' : ''}>ОТКРЫТЬ ФИНАЛ</button></div>`;
-        
-        document.getElementById('shop-cases-auction').innerHTML = `<div class="card" style="text-align:center"><div style="margin:0 auto 10px">${getCaseSVG()}</div><button class="btn" onclick="buyItem('case', 5000)">5000₮</button></div><div class="card" style="text-align:center"><div style="margin:0 auto 10px">${getKeySVG()}</div><button class="btn" onclick="buyItem('key', 3000)">3000₮</button></div>`;
-        
-        document.getElementById('bp-track').innerHTML = BP_DB.map((item, i) => { const isUnlocked = state.lvl >= item.lvl; const isClaimed = state.claimedBp.includes(i); return `<div class="bp-slot ${isUnlocked ? 'unlocked' : ''}"><div>LVL ${item.lvl}</div><div style="margin:8px 0">${item.label}</div><button class="btn" style="padding:5px" onclick="claimBp(${i})" ${isClaimed || !isUnlocked ? 'disabled' : ''}>${isClaimed ? 'ПОЛУЧЕНО' : 'ЗАБРАТЬ'}</button></div>`; }).join('');
-        
-        document.getElementById('shop-drones-auction').innerHTML = DRONES_DB.filter(d => d.price > 0).map(d => `<div class="card" style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px"><div>${getDroneSVG(d.id, d.color)}</div><div><b>${d.name}</b><br><small>${d.price}₮</small></div></div><button class="btn" style="width:100px" onclick="buyDrone('${d.id}')">КУПИТЬ</button></div>`).join('');
-        
-        document.getElementById('shop-skins-auction').innerHTML = SKINS_DB.filter(s => s.price > 0).map(s => `<div class="card" style="text-align:center"><div style="background:${s.color}; height:8px; border-radius:4px"></div><button class="btn" onclick="buySkin('${s.id}')">${state.ownedSkins.includes(s.color) ? 'КУПЛЕНО' : s.price + '₮'}</button></div>`).join('');
-        
-        document.getElementById('final-shop-auction').innerHTML = `<h4 style="color:var(--gold)">ОСОБЫЙ ОБЪЕКТ</h4><div class="card"><div style="display:flex; align-items:center; gap:15px"><div class="coin-icon" style="width:40px; height:40px; font-size:1.2rem">$</div><div><b>МОДУЛЬ СИНГУЛЯРНОСТИ</b><br><small>Legacy-скины сохранятся</small></div></div><button class="btn" style="background:var(--gold)" onclick="triggerSingularity()">АКТИВИРОВАТЬ (1.000.000₮)</button></div>`;
-        
-        renderSellSection();
-        renderAuction();
+        document.getElementById('orders-area').innerHTML = DRONES_DB.filter(d => activeLocs.includes(d.loc)).map((d, i) => {
+            let reward = (i + 1) * 120;
+            let cost = 10 + (i * 3);
+            return `<div class="card">
+                <div class="loc-tag">${d.loc}</div>
+                <div style="display:flex; justify-content:space-between; margin:5px 0"><b>Заказ #${i+1}</b> <span>${reward}₮</span></div>
+                <button class="btn" onclick="sendOrder(${reward},${cost},${3000+(i*500)})">ЗАПУСТИТЬ (-${cost}%)</button>
+            </div>`;
+        }).join('');
+
+        document.getElementById('drones-area').innerHTML = state.drones.map((d, i) => `
+            <div class="card">
+                <div style="display:flex; gap:15px; align-items:center">
+                    <div class="drone-preview">${getDroneSVG(d.id, d.color)}</div>
+                    <div style="flex-grow:1">
+                        <div style="display:flex; justify-content:space-between"><b>${d.name}</b> <span>${Math.floor(d.battery)}%</span></div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px">
+                            <button class="btn btn-charge" onclick="chargeDrone(${i})" ${d.battery >= 100 ? 'disabled' : ''}>ЗАРЯДИТЬ</button>
+                            <button class="btn btn-charge" style="background:#374151" onclick="openSkinMenu(${i})">СКИНЫ</button>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:5px;">
+                            <button class="btn btn-outline" style="border-color:var(--gold); color:var(--gold)" onclick="openAuctionPost(${i})">АУКЦИОН</button>
+                            <button class="btn btn-outline" onclick="sellDrone(${i})">ПРОДАТЬ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById('cases-area').innerHTML = `
+            <div class="card">
+                <div style="display:flex; align-items:center; gap:15px"><div class="item-preview">${getCaseSVG()}</div><div style="flex-grow:1"><b>Базовый кейс</b><br><small>В наличии: ${state.inventory.cases}</small></div></div>
+                <button class="btn" style="margin-top:10px" onclick="openCase()" ${state.inventory.keys <= 0 || state.inventory.cases <= 0 ? 'disabled' : ''}>ОТКРЫТЬ (Ключи: ${state.inventory.keys})</button>
+            </div>
+            <div class="card" style="border-color: var(--gold)">
+                <div style="display:flex; align-items:center; gap:15px"><div class="item-preview">${getCaseSVG(true)}</div><div style="flex-grow:1"><b>Final Chest</b><br><small>Доступно: ${state.inventory.finalChests}</small></div></div>
+                <button class="btn" style="margin-top:10px; background:var(--gold)" onclick="openFinalChest()" ${state.inventory.finalChests <= 0 ? 'disabled' : ''}>ОТКРЫТЬ ФИНАЛ</button>
+            </div>`;
+
+        document.getElementById('shop-cases').innerHTML = `<div class="card" style="text-align:center; margin-bottom:0"><div class="item-preview" style="margin:0 auto 10px">${getCaseSVG()}</div><button class="btn" onclick="buyItem('case', 5000)">5000₮</button></div><div class="card" style="text-align:center; margin-bottom:0"><div class="item-preview" style="margin:0 auto 10px">${getKeySVG()}</div><button class="btn" onclick="buyItem('key', 3000)">3000₮</button></div>`;
+
+        document.getElementById('bp-track').innerHTML = BP_DB.map((item, i) => {
+            const isUnlocked = state.lvl >= item.lvl;
+            const isClaimed = state.claimedBp.includes(i);
+            return `<div class="bp-slot ${isUnlocked ? 'unlocked' : ''}"><div style="font-size:0.6rem; color:${isUnlocked ? 'var(--gold)' : '#444'}">LVL ${item.lvl}</div><div style="font-size:0.7rem; margin:8px 0; font-weight:bold; height:30px; display:flex; align-items:center; justify-content:center">${item.label}</div><button class="btn" style="padding:5px; font-size:0.55rem" onclick="claimBp(${i})" ${isClaimed || !isUnlocked ? 'disabled' : ''}>${isClaimed ? 'ПОЛУЧЕНО' : 'ЗАБРАТЬ'}</button></div>`;
+        }).join('');
+
+        document.getElementById('shop-drones').innerHTML = DRONES_DB.filter(d => d.price > 0).map(d => `<div class="card" style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div class="drone-preview">${getDroneSVG(d.id, d.color)}</div><div><b>${d.name}</b><br><small>${d.price}₮</small></div></div><button class="btn" style="width:100px" onclick="buyDrone('${d.id}')">КУПИТЬ</button></div>`).join('');
+
+        document.getElementById('shop-skins').innerHTML = SKINS_DB.filter(s => s.price > 0).map(s => `<div class="card" style="text-align:center"><div style="background:${s.color}; height:8px; border-radius:4px; margin-bottom:8px"></div><button class="btn" onclick="buySkin('${s.id}')">${state.ownedSkins.includes(s.color) ? 'КУПЛЕНО' : s.price + '₮'}</button></div>`).join('');
+
+        document.getElementById('final-shop').innerHTML = `
+            <h4 style="color:var(--gold)">ОСОБЫЙ ОБЪЕКТ</h4>
+            <div class="card" style="border-color:var(--gold); background: linear-gradient(45deg, #161b22, #1a202c);">
+                <div style="display:flex; align-items:center; gap:15px">
+                    <div class="item-preview" style="border: 1px solid var(--gold); font-size:1.5rem">✨</div>
+                    <div style="flex-grow:1"><b style="color:var(--gold)">МОДУЛЬ СИНГУЛЯРНОСТИ</b><br><small>Legacy-скины сохранятся</small></div>
+                </div>
+                <button class="btn" style="margin-top:10px; background:var(--gold)" onclick="triggerSingularity()">АКТИВИРОВАТЬ (1.000.000₮)</button>
+            </div>`;
     }
 
-    setInterval(() => { state.drones.forEach(d => { if(d.status==='idle' && d.battery<100) d.battery=Math.min(100, d.battery+1.8); }); render(); }, 4000);
+    setInterval(() => {
+        state.drones.forEach(d => { if(d.status==='idle' && d.battery<100) d.battery=Math.min(100, d.battery+1.8); });
+        render();
+    }, 4000);
+
     render();
 </script>
 </body>
